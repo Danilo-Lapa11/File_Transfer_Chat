@@ -9,7 +9,8 @@ def main():
 
     while True:
         data, addr = server.recvfrom(1024)
-        clients.append(addr)
+        if addr not in clients:
+            clients.append(addr)
 
         thread = threading.Thread(target=messagesTreatment, args=(server, data, addr))
         thread.start()
@@ -29,7 +30,8 @@ def broadcast(server, data, addr):
                 deleteClient(clientAddr)
 
 def deleteClient(addr):
-    clients.remove(addr)
+    if addr in clients:
+        clients.remove(addr)
 
 if __name__ == "__main__":
     main()

@@ -9,17 +9,20 @@ def main():
     server_address = ('127.0.0.1', 7777)
     username = input('Username: ')
     
-    thread1 = threading.Thread(target=receiveMessages, args=[client])
+    thread1 = threading.Thread(target=receiveMessages, args=[client, username])
     thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username])
 
     thread1.start()
     thread2.start()
 
-def receiveMessages(client):
+def receiveMessages(client, username):
     while True:
         try:
             msg = client.recv(1024).decode('utf-8')
             print(msg + '\n')
+            if "/~" + username + ": bye" in msg:
+                print("You left the room.")
+                return
         except socket.error:
             time.sleep(0.1)
 
@@ -30,6 +33,11 @@ def sendMessages(client, server_address, username):
             timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
             full_message = f'{server_address[0]}:{server_address[1]}/~{username}: {msg} {timestamp}'
             client.sendto(full_message.encode('utf-8'), server_address)
+
+            if msg.lower() == 'bye':
+                print("You left the room.")
+                return
+
         except:
             return
 
