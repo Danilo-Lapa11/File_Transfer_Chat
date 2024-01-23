@@ -11,7 +11,7 @@ def main():
         data, addr = server.recvfrom(1024)
         if addr not in clients:
             clients.append(addr)
-
+        
         thread = threading.Thread(target=messagesTreatment, args=(server, data, addr))
         thread.start()
 

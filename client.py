@@ -9,6 +9,11 @@ def main():
     server_address = ('127.0.0.1', 7777)
     username = input('Username: ')
     
+    print("Conectado")    
+    print("Para sair da sala digite 'bye'")
+
+    client.sendto(f"{username} entrou na sala".encode('utf-8'), server_address)
+
     thread1 = threading.Thread(target=receiveMessages, args=[client, username])
     thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username])
 
