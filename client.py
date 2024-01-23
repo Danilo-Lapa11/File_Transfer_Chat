@@ -3,10 +3,13 @@ import threading
 import socket
 import time
 
+SERVER_IP = '127.0.0.1'
+SERVER_PORT = 7777
+
 def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    server_address = ('127.0.0.1', 7777)
+    server_address = (SERVER_IP, SERVER_PORT)
     username = input('Username: ')
     
     print("Conectado")    
@@ -40,6 +43,7 @@ def sendMessages(client, server_address, username):
             client.sendto(full_message.encode('utf-8'), server_address)
 
             if msg.lower() == 'bye':
+                client.sendto(f"/exit {username}".encode('utf-8'), server_address)
                 print("You left the room.")
                 return
 
