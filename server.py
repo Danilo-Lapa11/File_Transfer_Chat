@@ -19,14 +19,20 @@ def main():
         thread.start()
 
 def messagesTreatment(server, data, addr):
-    message = data.decode('utf-8')
-    if message.startswith("/exit"):
-        deleteClient(addr)
-    else:
-        try:
-            broadcast(server, data, addr)
-        except:
-            deleteClient(addr)
+    # Adicionando um identificador único para cada usando a porta do cliente 
+    filename = f'{addr[1]}.txt'
+    
+    with open(filename, 'ab') as file:
+        file.write(data)
+        print(f"Recebido fragmento para {addr}")
+
+    with open(filename, 'r') as file:
+        message = file.read()
+        if '\n' in message:  # Indica o fim da mensagem
+            print(f"Reconstrução do arquivo para {addr} concluída. Transmitindo mensagem.")
+            broadcast(server, message.encode('utf-8'), addr)
+            open(filename, 'w').close()  # Limpa o arquivo
+
 
 def broadcast(server, data, addr):
     for clientAddr in clients:
