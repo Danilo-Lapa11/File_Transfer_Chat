@@ -1,11 +1,14 @@
 import threading
 import socket
 
+SERVER_IP = '127.0.0.1'
+SERVER_PORT = 7777
+
 clients = []
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind(('127.0.0.1', 7777))
+    server.bind((SERVER_IP, SERVER_PORT))
 
     while True:
         data, addr = server.recvfrom(1024)
@@ -16,10 +19,20 @@ def main():
         thread.start()
 
 def messagesTreatment(server, data, addr):
-    try:
-        broadcast(server, data, addr)
-    except:
-        deleteClient(addr)
+    # Adicionando um identificador único para cada usando a porta do cliente 
+    filename = f'{addr[1]}.txt'
+    
+    with open(filename, 'ab') as file:
+        file.write(data)
+        print(f"Recebido fragmento para {addr}")
+
+    with open(filename, 'r') as file:
+        message = file.read()
+        if '\n' in message:  # Indica o fim da mensagem
+            print(f"Reconstrução do arquivo para {addr} concluída. Transmitindo mensagem.")
+            broadcast(server, message.encode('utf-8'), addr)
+            open(filename, 'w').close()  # Limpa o arquivo
+
 
 def broadcast(server, data, addr):
     for clientAddr in clients:
