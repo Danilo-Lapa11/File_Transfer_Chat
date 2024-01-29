@@ -8,17 +8,19 @@ SERVER_PORT = 7777
 
 def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     server_address = (SERVER_IP, SERVER_PORT)
+
     username = input('Olá, meu nome é: ')
-    
     print("Conectado")    
     print("Para sair da sala digite 'bye'")
 
     client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
 
+    client_ip, client_port = client.getsockname()
+    client_addr = (client_ip, client_port)
+
     thread1 = threading.Thread(target=receiveMessages, args=[client, username])
-    thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username])
+    thread2 = threading.Thread(target=sendMessages, args=[client, client_addr, server_address, username])
 
     thread1.start()
     thread2.start()
@@ -39,19 +41,19 @@ def receiveMessages(client, username):
             msg = client.recv(1024).decode('utf-8')
             print(msg + '\n')
             if "/~" + username + ": bye" in msg:
-                print("You left the room.")
+                print("Você saiu da sala")
                 return
         except socket.error:
             time.sleep(0.1)
 
-def sendMessages(client, server_address, username):
+def sendMessages(client, client_addr, server_address, username):
     while True:
         msg = input('\n').strip()
         if msg.lower() == 'bye':
-            print("You left the room.")
+            print("Você saiu da sala")
             return
         timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
-        full_message = f'{server_address[0]}:{server_address[1]}/~{username}: {msg} {timestamp}\n'
+        full_message = f'{server_address[0]}:{client_addr[1]}/~{username}: {msg} {timestamp}\n'
         
         with open('mensagem.txt', 'w') as file:
             file.write(full_message)
