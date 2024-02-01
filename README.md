@@ -1,6 +1,6 @@
 # File Transfer Chat - *Chat de Transferência de Arquivo*
 
-Neste projeto consistirá em duas partes de desenvolvimento de um chat de transferência de arquivos, na primeira parte implementaremos uma transmissão de arquivos com UDP e na segunda parte implementaremos um chat com transferência confiável RDT 3.0.
+Neste projeto consistirá em duas partes de desenvolvimento de um chat de transferência de arquivos, na primeira parte implementaremos um chat de transmissão de arquivos com UDP e na segunda parte implementaremos transferência confiável RDT 3.0 no chat.
 
 ## **Parte 1:** Transmissão com UDP
 
@@ -12,7 +12,7 @@ Na primeira parte é implementado um sistema de chat básico usando o protocolo 
 - Envio de mensagens em tempo real.
 - Fragmentação e reconstrução de mensagens para garantir a integridade da transmissão.
 - Comandos para entrar e sair do chat.
-- Vizualização do fragmentação e resconstrução de cada fragmento
+- Vizualização da fragmentação e resconstrução de cada fragmento.
 
 ## **Parte 2:** Transmissão confiável com RDT 3.0
 Em andamento...
