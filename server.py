@@ -24,14 +24,13 @@ def messagesTreatment(server, data, addr):
     
     with open(filename, 'ab') as file:
         file.write(data)
-        print(f"Fragmento recebido de {addr}")
+        print(f"Recebido fragmento para {addr}")
 
     with open(filename, 'r') as file:
         message = file.read()
         if '\n' in message:  # Indica o fim da mensagem
-            print(f"Reconstrução do arquivo de {addr} - CONCLUÍDA")
+            print(f"Reconstrução do arquivo para {addr} concluída. Transmitindo mensagem.")
             broadcast(server, message.encode('utf-8'), addr)
-            print("Mensagem enviada")
             open(filename, 'w').close()  # Limpa o arquivo
 
 
