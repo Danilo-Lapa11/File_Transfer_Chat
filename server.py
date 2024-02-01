@@ -19,7 +19,7 @@ def main():
         thread.start()
 
 def messagesTreatment(server, data, addr):
-    # Adicionando um identificador único para cada usando a porta do cliente 
+    # Adiciona um identificador único para cada cliente usando a porta que ele entrou 
     filename = f'{addr[1]}.txt'
     
     with open(filename, 'ab') as file:
