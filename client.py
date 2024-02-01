@@ -58,18 +58,20 @@ def receiveMessages(client, username):
             print(msg + '\n')
             if "/~" + username + ": bye" in msg:
                 print("Você saiu da sala")
+                print("Você saiu da sala")
                 return
         except socket.error:
             time.sleep(0.1)
 
-def sendMessages(client, server_address, username):
+def sendMessages(client, client_addr, server_address, username):
     while True:
         msg = input('\n').strip()
         if msg.lower() == 'bye':
             print("Você saiu da sala")
+            print("Você saiu da sala")
             return
         timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
-        full_message = f'{server_address[0]}:{server_address[1]}/~{username}: {msg} {timestamp}\n'
+        full_message = f'{server_address[0]}:{client_addr[1]}/~{username}: {msg} {timestamp}\n'
         
         with open('mensagem.txt', 'w') as file:
             file.write(full_message)
