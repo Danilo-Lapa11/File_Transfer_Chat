@@ -28,12 +28,16 @@ def main():
             # conecta o cliente
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             server_address = (SERVER_IP, SERVER_PORT)
-            print("\nConectado") 
+            
+            # Envie uma mensagem inicial para estabelecer a comunicação
+            client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
+
+            # getsockname() retorne ip e porta do cliente para formatar o envio da mensagem
+            client_ip, client_port = client.getsockname()
 
             # inicializa as threads
-            client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
             thread1 = threading.Thread(target=receiveMessages, args=[client, username])
-            thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username])
+            thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username, client_ip, client_port])
             thread1.start()
             thread2.start()
         else:
@@ -62,14 +66,14 @@ def receiveMessages(client, username):
         except socket.error:
             time.sleep(0.1)
 
-def sendMessages(client, server_address, username):
+def sendMessages(client, server_address, username, client_ip, client_port):
     while True:
         msg = input('\n').strip()
         if msg.lower() == 'bye':
             print("Você saiu da sala")
             return
         timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
-        full_message = f'{server_address[0]}:{server_address[1]}/~{username}: {msg} {timestamp}\n'
+        full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}\n'
         
         with open('mensagem.txt', 'w') as file:
             file.write(full_message)
