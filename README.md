@@ -2,7 +2,7 @@
 
 Neste projeto consistirá em duas partes de desenvolvimento de um chat de transferência de arquivos, na primeira parte implementaremos um chat de transmissão de arquivos com UDP e na segunda parte implementaremos transferência confiável RDT 3.0 no chat.
 
-## **Parte 1:** Transmissão com UDP
+## **1° Entrega:** Transmissão com UDP
 
 ### Descrição
 Na primeira parte é implementado um sistema de chat básico usando o protocolo UDP. Ele consiste em um servidor (`server.py`) e um cliente (`client.py`). Os usuários podem se conectar ao servidor e enviar mensagens de texto para todos os outros usuários conectados demonstrando a utilização de sockets usando o protocolo UDP, threads e manipulação de arquivos txt em Python como forma de mensagens.
@@ -14,7 +14,7 @@ Na primeira parte é implementado um sistema de chat básico usando o protocolo 
 - Comandos para entrar e sair do chat.
 - Vizualização da fragmentação e resconstrução de cada fragmento.
 
-## **Parte 2:** Transmissão confiável com RDT 3.0
+## **2° Entrega:** Transmissão confiável com RDT 3.0
 Em andamento...
 
 
