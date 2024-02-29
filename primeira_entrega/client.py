@@ -15,11 +15,9 @@ def main():
 
     proceed = True
     while proceed == True: # Verificação para entrar no chat com o comando certo
-        inital_msg = str(input())
+        inital_msg = str(input()) # chama o input
 
-        if inital_msg == "bye":
-            exit()
-        elif inital_msg.startswith("Olá, meu nome é") :
+        if inital_msg.startswith("Olá, meu nome é") :
             proceed = False
             # obtem o nome do cliente
             msg = inital_msg.split()
@@ -29,10 +27,11 @@ def main():
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             server_address = (SERVER_IP, SERVER_PORT)
             print("Conectado")
+
             # Envie uma mensagem inicial para estabelecer a comunicação
             client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
 
-            # getsockname() retorne ip e porta do cliente para formatar o envio da mensagem
+            # getsockname() retorna ip e porta do cliente para formatar o envio da mensagem
             client_ip, client_port = client.getsockname()
 
             # inicializa as threads
@@ -41,6 +40,7 @@ def main():
             thread1.start()
             thread2.start()
         else:
+            # repete a mensagem de comandos e o input caso não tenha digitado o comando de entrar na sala
             print("|-------------------- COMANDOS ----------------------|")
             print("| Para entrar na sala -> 'Olá, meu nome é <username>'|")
             print("| Para sair da sala -> 'bye'                         |")
@@ -48,11 +48,14 @@ def main():
 
 def sendFile(client, server_address, filepath):
     with open(filepath, 'rb') as file:
-        chunk = file.read(1024)
-        
-        while chunk: # enquanto houver bytes fragmentados ele lê e envia o fragmento até 1024 bytes
-            client.sendto(chunk, server_address)
-            chunk = file.read(1024)
+        total_sent = 0
+        chunk = file.read(1024 - 10)  # Deixe espaço para metadados
+        while chunk:
+            eof = len(chunk) < (1024 - 10)
+            header = f"{eof}".encode('utf-8').ljust(10, b'\0')  # Cabeçalho de 10 bytes
+            client.sendto(header + chunk, server_address)
+            total_sent += 1
+            chunk = file.read(1024 - 10)
 
 
 def receiveMessages(client, username):
@@ -70,15 +73,18 @@ def sendMessages(client, server_address, username, client_ip, client_port):
     while True:
         msg = input('\n').strip()
         if msg.lower() == 'bye':
-            print("Você saiu da sala")
-            return
-        timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
-        full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}\n'
+            print("Você saiu da sala.")
+            client.sendto(f"{username} saiu da sala\n".encode('utf-8'), server_address)
+            client.close()  # Fecha o socket antes de sair
+            return  # Retorna para terminar a thread e não fecha o programa inteiro
         
-        with open('mensagem.txt', 'w') as file:
-            file.write(full_message)
-        
-        sendFile(client, server_address, 'mensagem.txt')
+        else: # 
+            timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
+            full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}\n' 
+            with open('mensagem.txt', 'w') as file:
+                file.write(full_message)
+            
+            sendFile(client, server_address, 'mensagem.txt')
 
 
 if __name__ == "__main__":
