@@ -14,7 +14,7 @@ def main():
         data, addr = server.recvfrom(1024)
         if addr not in clients:
             clients.append(addr)
-        
+            print(addr)
         thread = threading.Thread(target=messagesTreatment, args=(server, data, addr))
         thread.start()
 
@@ -24,12 +24,12 @@ def messagesTreatment(server, data, addr):
     
     with open(filename, 'ab') as file:
         file.write(data)
-        print(f"Recebido fragmento para {addr}")
+        print(f"Recebido fragmento de {addr}")
 
     with open(filename, 'r') as file:
         message = file.read()
         if '\n' in message:  # Indica o fim da mensagem
-            print(f"Reconstrução do arquivo para {addr} concluída. Transmitindo mensagem.")
+            print(f"Reconstrução do arquivo para {addr} concluída. \nTransmitindo mensagem.")
             broadcast(server, message.encode('utf-8'), addr)
             open(filename, 'w').close()  # Limpa o arquivo
 

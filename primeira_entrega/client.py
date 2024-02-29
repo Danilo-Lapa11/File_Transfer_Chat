@@ -28,7 +28,7 @@ def main():
             # conecta o cliente
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             server_address = (SERVER_IP, SERVER_PORT)
-            
+            print("Conectado")
             # Envie uma mensagem inicial para estabelecer a comunicação
             client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
 
