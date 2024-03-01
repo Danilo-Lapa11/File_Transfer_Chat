@@ -6,6 +6,7 @@ import time
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 7777
 
+
 def main():
 
     print("|-------------------- COMANDOS ----------------------|")
@@ -15,13 +16,13 @@ def main():
 
     proceed = True
     while proceed == True: # Verificação para entrar no chat com o comando certo
-        inital_msg = str(input()) # chama o input
+        inital_msg = str(input())
 
         if inital_msg.startswith("Olá, meu nome é") :
             proceed = False
             # obtem o nome do cliente
             msg = inital_msg.split()
-            username = msg[-1]
+            username = msg[-1] # pega o nome digitado pelo cliente
 
             # conecta o cliente
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -29,7 +30,7 @@ def main():
             print("Conectado")
 
             # Envie uma mensagem inicial para estabelecer a comunicação
-            client.sendto(f"{username} entrou na sala\n".encode('utf-8'), server_address)
+            client.sendto(f"{username} entrou na sala".encode('utf-8'), server_address)
 
             # getsockname() retorna ip e porta do cliente para formatar o envio da mensagem
             client_ip, client_port = client.getsockname()
@@ -40,7 +41,7 @@ def main():
             thread1.start()
             thread2.start()
         else:
-            # repete a mensagem de comandos e o input caso não tenha digitado o comando de entrar na sala
+            # Repete a mensagem de comandos e o input caso não tenha digitado o comando de entrar na sala
             print("|-------------------- COMANDOS ----------------------|")
             print("| Para entrar na sala -> 'Olá, meu nome é <username>'|")
             print("| Para sair da sala -> 'bye'                         |")
@@ -74,7 +75,7 @@ def sendMessages(client, server_address, username, client_ip, client_port):
         msg = input('\n').strip()
         if msg.lower() == 'bye':
             print("Você saiu da sala.")
-            client.sendto(f"{username} saiu da sala\n".encode('utf-8'), server_address)
+            client.sendto(f"{username} saiu da sala".encode('utf-8'), server_address)
             client.close()  # Fecha o socket antes de sair
             return  # Retorna para terminar a thread e não fecha o programa inteiro
         
@@ -86,6 +87,14 @@ def sendMessages(client, server_address, username, client_ip, client_port):
             
             sendFile(client, server_address, 'mensagem.txt')
 
+
+from datetime import datetime
+import threading
+import socket
+import time
+
+SERVER_IP = '127.0.0.1'
+SERVER_PORT = 7777
 
 if __name__ == "__main__":
     main()
