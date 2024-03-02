@@ -36,8 +36,8 @@ def main():
             client_ip, client_port = client.getsockname()
 
             # inicializa as threads
-            thread1 = threading.Thread(target=receiveMessages, args=[client, username])
-            thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username, client_ip, client_port])
+            thread1 = threading.Thread(target=receiveMessages, args=[client, username, client_ip, client_port])
+            thread2 = threading.Thread(target=sendMessages, args=[client, server_address, username])
             thread1.start()
             thread2.start()
         else:
@@ -50,7 +50,7 @@ def main():
 def sendFile(client, server_address, filepath):
     with open(filepath, 'rb') as file:
         total_sent = 0
-        chunk = file.read(1024 - 10)  # Deixe espaço para metadados
+        chunk = file.read(1024 - 10)  # Deixa espaço para metadados
         while chunk:
             eof = len(chunk) < (1024 - 10)
             header = f"{eof}".encode('utf-8').ljust(10, b'\0')  # Cabeçalho de 10 bytes
@@ -59,18 +59,19 @@ def sendFile(client, server_address, filepath):
             chunk = file.read(1024 - 10)
 
 
-def receiveMessages(client, username):
+def receiveMessages(client, username, client_ip, client_port):
     while True:
         try:
-            msg = client.recv(1024).decode('utf-8')
-            print(msg + '\n')
-            if "/~" + username + ": bye" in msg:
-                print("Você saiu da sala")
-                return
-        except socket.error:
-            time.sleep(0.1)
+            msg = client.recv(4096).decode('iso-8859-1') # aumento o buffer para testar 
+            timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
+            full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}' 
+            print(full_message + '\n')
 
-def sendMessages(client, server_address, username, client_ip, client_port):
+        except socket.error:
+            print("erro de socket")
+            
+
+def sendMessages(client, server_address, username):
     while True:
         msg = input('\n').strip()
         if msg.lower() == 'bye':
@@ -80,10 +81,8 @@ def sendMessages(client, server_address, username, client_ip, client_port):
             return  # Retorna para terminar a thread e não fecha o programa inteiro
         
         else: # 
-            timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
-            full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}\n' 
             with open('mensagem.txt', 'w') as file:
-                file.write(full_message)
+                file.write(msg)
             
             sendFile(client, server_address, 'mensagem.txt')
 
