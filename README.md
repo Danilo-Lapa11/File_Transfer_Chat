@@ -22,6 +22,11 @@ Este projeto implementa um sistema de chat básico com transferência confiável
 - Biblioteca zlib (já incluída na maioria das instalações Python)
 - Acesso à biblioteca de sockets do Python
 
+## Checksum
+O checksum, implementado usando o algoritmo CRC32 da biblioteca zlib, é utilizado para garantir a integridade das mensagens durante a transmissão. Cada fragmento de mensagem é acompanhado por um checksum, que é verificado pelo receptor para detectar qualquer corrupção nos dados.
+
+No processo de envio, o checksum é calculado para cada fragmento antes de ser transmitido. Ao receber um fragmento, o receptor recalcula o checksum e compara com o valor recebido. Se houver discrepância, a mensagem é considerada corrompida e descartada, assim ajuda a garantir que as mensagens sejam transmitidas de maneira confiável, mesmo em ambientes propensos a erros de comunicação.
+
 ## Instalação
 Não é necessária uma instalação específica, mas é preciso ter o Python 3 instalado no sistema. O projeto pode ser baixado diretamente do repositório.
 
