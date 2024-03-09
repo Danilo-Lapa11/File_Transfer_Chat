@@ -43,7 +43,7 @@ def messagesTreatment(server, data, addr):
     fragment = data[5:]
 
     # Usa a biblioteca para calcular o checksum do fragmento
-    checksum_calculated = zlib.crc32(fragment)
+    checksum_calculated = get_checksum(fragment)
     
     # Faz a comparação com o checksum que veio no pacote com o checksum calculado novamente para ver se não houve erros
     if checksum_received == checksum_calculated.to_bytes(4, 'big'):
@@ -75,7 +75,7 @@ def broadcast(server, addr):
         fragmento = mensagem_completa[inicio:fim]
         
         # Calcula o checksum do fragmento
-        checksum = zlib.crc32(fragmento)
+        checksum = get_checksum(fragmento)
 
         # Determina se este é o último fragmento
         eof = 1 if fim == tamanho_mensagem else 0
@@ -93,6 +93,17 @@ def broadcast(server, addr):
     print(f"~ Server(Broadcast): <Mensagem enviada>")
 
 
+def get_checksum(data):
+    checksum_value = 0
+    for i in range(0, len(data), 2):
+        if i + 1 < len(data):
+            word = (data[i] << 8) + data[i + 1]
+            checksum_value += word
+            while (checksum_value >> 16) > 0:
+                checksum_value = (checksum_value & 0xFFFF) + (checksum_value >> 16)
+    checksum_value = ~checksum_value & 0xFFFF
+    return checksum_value
+
 
 def deleteClient(addr):
     if addr in clients:
@@ -103,7 +114,6 @@ def deleteClient(addr):
 
 import threading
 import socket # Sockets
-import zlib # Checksum - CRC32
 
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 7777

@@ -43,6 +43,18 @@ def main():
             print("|____________________________________________________|")
 
 
+def get_checksum(data):
+    checksum_value = 0
+    for i in range(0, len(data), 2):
+        if i + 1 < len(data):
+            word = (data[i] << 8) + data[i + 1]
+            checksum_value += word
+            while (checksum_value >> 16) > 0:
+                checksum_value = (checksum_value & 0xFFFF) + (checksum_value >> 16)
+    checksum_value = ~checksum_value & 0xFFFF
+    return checksum_value
+
+
 def receiveMessages(client, close_event):
 
     while not close_event.is_set():  # Verifica se o evento de fechar cliente foi sinalizado
@@ -65,7 +77,7 @@ def receiveMessages(client, close_event):
                     checksum_received = int.from_bytes(data[1:5], byteorder='big')
                     fragment = data[5:]  # Correção: extrai o fragmento corretamente
 
-                    checksum_calculated = zlib.crc32(fragment)
+                    checksum_calculated = get_checksum(fragment)
 
                     if checksum_received == checksum_calculated:
                         queue_fragments.append(fragment.decode('iso-8859-1'))  # Decodifica e adiciona à fila
@@ -97,7 +109,7 @@ def receiveMessages(client, close_event):
             checksum_received = int.from_bytes(data[1:5], byteorder='big')
             fragment = data[5:]  # Correção: extrai o fragmento corretamente
 
-            checksum_calculated = zlib.crc32(fragment)
+            checksum_calculated = get_checksum(fragment)
 
             if checksum_received == checksum_calculated:
                 queue_fragments.append(fragment.decode('iso-8859-1'))  # Decodifica e adiciona à fila
@@ -130,7 +142,7 @@ def sendMessages(client, server_address, username, client_ip, client_port, close
                 chunk = file.read(1019)  # Reserva espaço para EOF e checksum
                 while chunk:
                     eof = len(chunk) < 1019
-                    checksum = zlib.crc32(chunk)
+                    checksum = get_checksum(chunk)
                     # Cabeçalho = 'flag eof' (1 byte) + 'checksum CRC32' (4 bytes)
                     header = (1 if eof else 0).to_bytes(1, 'big') + checksum.to_bytes(4, 'big')
                     client.sendto(header + chunk, server_address)
@@ -142,7 +154,6 @@ from datetime import datetime
 import threading
 import socket
 from threading import Event
-import zlib # Chesum - CRC32
 
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 7777
