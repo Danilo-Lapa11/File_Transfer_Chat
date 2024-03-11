@@ -44,3 +44,5 @@ python server.py
 python client.py
 ```
 
+![image](https://github.com/Danilo-Lapa11/File_Transfer_Chat/assets/123251524/18f3ba9d-1127-459d-ad42-b61b7e3e17ce)
+![image](https://github.com/Danilo-Lapa11/File_Transfer_Chat/assets/123251524/fb6d9682-c7b5-4cf8-8202-75d47c7d075a)
