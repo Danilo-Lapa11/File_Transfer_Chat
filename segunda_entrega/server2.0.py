@@ -1,96 +1,82 @@
 
 def main():
-    # Conexão do Servidor
-    server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind((SERVER_IP, SERVER_PORT))
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server_socket.bind((SERVER_IP, SERVER_PORT))
+    print("Servidor iniciado e aguardando conexões...\n")
 
     while True:
-        # Recebe dados dos clientes - Buffer de 1024 bytes
-        data, addr = server.recvfrom(1024)
+        data, client_address = server_socket.recvfrom(1024)
+        
+        # Inicia uma nova thread para lidar com a mensagem recebida
+        thread = threading.Thread(target=handle_client, args=(server_socket, data, client_address))
+        thread.start()
+    
+def send_ack_handshake(server_socket, client_address, username):
+    ack_message = f"ACK:{username}".encode('utf-8')
+    server_socket.sendto(ack_message, client_address)
+    print('~ Server <SYN ACK enviado>')
 
-        # Verifica se é um novo cliente. Se for, adiciona no servidor
-        if addr not in clients and addr not in message_queues:
-                clients.append(addr) 
-                message_queues[addr] = []
+def handle_client(server_socket, data, client_address):
+    if data.startswith(b"SYN:"):
+        # Extração do username a partir da mensagem SYN
+        username = data.decode('utf-8').split(":")[1]
+        print(f"~ from Client <SYN ACK recebido de {username}>")
+        send_ack_handshake(server_socket, client_address, username)
 
-        # Comando de entrada da sala - informa para todos os conectados que o novo cliente entrou na sala        
-        if data.endswith(b'entrou na sala'):
-            for clientAddr in clients:
-                if clientAddr != addr:
-                    server.sendto(data, clientAddr)
+    elif data.endswith(b"entrou na sala"):
+        print(f"~ Server <Conexão estabelecida>\n")
+        clients.append(client_address)  # Adiciona o cliente à lista de clientes conectados
+        expected_seq_nums[client_address] = 0
 
-        # Comando de saída da sala - informa para todos os conectados que o cliente saiu na sala
-        elif data.endswith(b'saiu da sala'):
-            for clientAddr in clients:
-                if clientAddr != addr:
-                    server.sendto(data, clientAddr)
-            deleteClient(addr)
-
-        else: 
-            # Inicia as threads de mensagens
-            thread = threading.Thread(target=messagesTreatment, args=(server, data, addr))
-            thread.start()
+        # envia para todos que o usuario entoru na sala
+        for clientAddr in clients:
+            if clientAddr != client_address:
+                server_socket.sendto(data, clientAddr)
+    
+    else:
+        # Tratamento de mensagens regulares do chat
+        messagesTreatment(server_socket, data, client_address)
 
 
 def messagesTreatment(server, data, addr):
-    # Separa o fragmento em: 
-    #       Flag eof (informa se é o ultimo fragmento)
-    #       Checksum (Verifica se houve erros de corrupção de mensagem)
-    #       Fragmento (Mensagem)
 
-    eof = data[0] 
-    checksum_received = data[1:5]
-    fragment = data[5:]
+    eof = data[0]                                          # Flag eof (informa se é o ultimo fragmento)
+    checksum_received = data[1:5]                          # Checksum (Verifica se houve erros de corrupção de mensagem)
+    seq_num_received = int.from_bytes(data[5:6], 'big')    # Número de sequencia do pacote recebido em int  
+    message = data[6:]                                     # Mensagem
 
-    # Usa a biblioteca para calcular o checksum do fragmento
-    checksum_calculated = get_checksum(fragment)
-    
-    # Faz a comparação com o checksum que veio no pacote com o checksum calculado novamente para ver se não houve erros
-    if checksum_received == checksum_calculated.to_bytes(4, 'big'):
+    # Calcula o checksum do pacote recebido
+    checksum_calculated = get_checksum(message)
+        
+    # Verifica o checksum e o número de sequência
+    if (checksum_received == checksum_calculated) and (seq_num_received == expected_seq_nums[addr]):
+        
+        # ENVIA ACK PRO CLIENTE
+        seq_num = seq_num_received.to_bytes(1, 'big')
+        send_ack(server, addr, seq_num)
 
-        # Verifica se é o ultimo fragmento
-        if eof == 1:
-            message_queues[addr].append(fragment)
-            # Processa o final da mensagem
+        if eof == 1: # ultimo fragmento
+            # Processa a mensagem completa
+            broadcast(data, server, addr)  # Envia a mensagem para todos
             print(f"Mensagem completa recebida de {addr}")
-
-            broadcast(server, addr) # Envia a mensagem pra todos
-            message_queues[addr].clear() # Limpa a fila depois da mensagem ter sido enviada
+            expected_seq_nums[addr] = 0
         else:
-            message_queues[addr].append(fragment)
+            broadcast(server, addr)  # Envia a mensagem para todos
     else:
-        print("server - Erro de checksum. Mensagem pode estar corrompida.")
-        # reenvia
+        print(f"~Server <Erro de checksum ou sequência incorreta> de {addr}")
 
-def broadcast(server, addr):
-    mensagem_completa = b''.join(message_queues[addr])
-    
-    # Inicia a fragmentação da mensagem e a preparação para envio
-    inicio = 0
-    tamanho_mensagem = len(mensagem_completa)
 
-    while inicio < tamanho_mensagem:
-        # Determina o final do fragmento, considerando o limite de 1024 bytes
-        fim = min(inicio + 1024 - 5, tamanho_mensagem)  # Reserva 5 bytes para checksum e EOF
-        fragmento = mensagem_completa[inicio:fim]
-        
-        # Calcula o checksum do fragmento
-        checksum = get_checksum(fragmento)
-
-        # Determina se este é o último fragmento
-        eof = 1 if fim == tamanho_mensagem else 0
-        
-        # Prepara o cabeçalho com checksum e EOF
-        cabeçalho = eof.to_bytes(1, byteorder='big') + checksum.to_bytes(4, byteorder='big')
-        
-        # Envia o fragmento com cabeçalho para cada cliente, exceto o remetente
-        for clientAddr in clients:
-            if clientAddr != addr:
-                server.sendto(cabeçalho + fragmento, clientAddr)
-        
-        inicio += 1024 - 5  # Atualiza o início para o próximo fragmento
-
+def broadcast(package ,server, addr):
+    # Envia o fragmento com cabeçalho para cada cliente, exceto o remetente
+    for clientAddr in clients:
+        if clientAddr != addr:
+            server.sendto(package, clientAddr)
     print(f"~ Server(Broadcast): <Mensagem enviada>")
+
+
+def send_ack(server, addr, seq_num):
+    ack_packet = b'ACK' + seq_num
+    server.sendto(ack_packet, addr)
 
 
 def get_checksum(data):
@@ -102,13 +88,13 @@ def get_checksum(data):
             while (checksum_value >> 16) > 0:
                 checksum_value = (checksum_value & 0xFFFF) + (checksum_value >> 16)
     checksum_value = ~checksum_value & 0xFFFF
-    return checksum_value
+    return checksum_value.to_bytes(4, 'big')
 
 
 def deleteClient(addr):
     if addr in clients:
         clients.remove(addr) # remove o cliente da lista de clientes conectados
-        message_queues.pop(addr) #remove o cliente do dicionário de fila de mensagens
+        expected_seq_nums.pop(addr) #remove o cliente do dicionário de fila de mensagens
         print(f"~ Server: <Cliente {addr} removido>") # informa no server que o usario foi removido
 
 
@@ -118,10 +104,13 @@ import socket # Sockets
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 7777
 
+
+
 # Lista de Clientes Conectados
 clients = []
 # Dicionário para armazenar as filas de fragmentos de cada cliente
-message_queues = {}
+
+expected_seq_nums = {}
 
 if __name__ == "__main__":
     main()
