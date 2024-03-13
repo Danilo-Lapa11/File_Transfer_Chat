@@ -1,4 +1,3 @@
-
 def main():
     print("|-------------------- COMANDOS ----------------------|")
     print("| Para entrar na sala -> 'Olá, meu nome é <username>'|")
@@ -47,9 +46,10 @@ def handshake(client_socket, server_address, username):
     
     # Espera pela resposta ACK do servidor
     try:
-        # client_socket.settimeout(0.1)  # Define um timeout
+        client_socket.settimeout(0.1)  # Define um timeout
 
-        ack, _ = client_socket.recvfrom(1024)
+        ack, _ = client_socket.recvfrom(1024) # Recebe a resposta do servidor SYN ACK
+
         if ack.startswith(b"ACK"):
             # Passo 3: Cliente envia confirmação de conexão
             client_socket.settimeout(None)  # Remove o timeout
@@ -79,7 +79,6 @@ def send_ack(client, server_address, seq_num):
 
 def sendMessages(client, server_address, username, client_ip, client_port, close_event):
     seq_num = 0  # Número de sequência inicial
-    ack_expected = False  # Flag para indicar se um ACK é esperado
 
     while True:
         msg = input('\n').strip()
