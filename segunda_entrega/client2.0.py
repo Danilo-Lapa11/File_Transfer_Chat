@@ -20,8 +20,10 @@ def main():
                 confirm_message = f"{username} entrou na sala".encode('utf-8')
                 client.sendto(confirm_message, server_address)
                 print('Conectado')
+
                 # getsockname() retorna ip e porta do cliente para formatar o envio da mensagem
                 client_ip, client_port = client.getsockname()
+
                 # Evento que sincroniza o fechamento das threads
                 close_event = Event()
 
@@ -45,10 +47,7 @@ def handshake(client_socket, server_address, username):
     
     # Espera pela resposta ACK do servidor
     try:
-
-        # FALTA DEFINIR TIMEOUT
-        # client_socket.settimeout(5)  # Define um timeout
-
+        # client_socket.settimeout(0.1)  # Define um timeout
 
         ack, _ = client_socket.recvfrom(1024)
         if ack.startswith(b"ACK"):
@@ -88,17 +87,20 @@ def sendMessages(client, server_address, username, client_ip, client_port, close
             print("Você saiu da sala.")
             client.sendto(f"{username} saiu da sala".encode('utf-8'), server_address)
             close_event.set()
+            client.close()
             break
         else:
+
             # Formatação da mensagem
             timestamp = datetime.now().strftime('%H:%M:%S %Y-%m-%d')
             full_message = f'{client_ip}:{client_port}/~{username}: {msg} {timestamp}'
 
             with open('mensagem.txt', 'w') as file:
-                file.write(full_message)
+                file.write(full_message) # excreve toda a mensagem no txt
             
             with open('mensagem.txt', 'rb') as file:
-                chunk = file.read(1018)  # Considera espaço para EOF, checksum e número de sequência
+                chunk = file.read(1018)  
+                # Lê o fragmento de 1018 bytes considerando espaço para EOF, checksum e número de sequência
 
                 while chunk:
                     eof = 1 if len(chunk) < 1018 else 0
@@ -108,28 +110,26 @@ def sendMessages(client, server_address, username, client_ip, client_port, close
                     
                     while True:
                         try:
-                            # Define um timeout para esperar por ACKs
-                            #client.settimeout(3)  
+                            # Define um timeout para esperar por ACKs - Não foi testado devido ao erro de paralelismo nos ACK
+                            # client.settimeout(3)  
                             # Tenta enviar fragmento
                             client.sendto(packet, server_address)
 
                             # Tenta receber ACK
                             # Aguarda o ACK após o envio de cada fragmento
-                            while ack_expected:
-                                ack, _ = client.recvfrom(1024)
-                                ack = ack.decode('utf-8')
-                                if ack == f"ACK{seq_num}":
-                                    ack_expected = False  # ACK recebido, pode prosseguir para o próximo fragmento
-                                    break
-                                else:
-                                    time.sleep(2)
+                            
+                            ack, _ = client.recvfrom(1024) # recebe ack do server
+                            ack = ack.decode('utf-8')
+                            if ack == f"ACK{seq_num}": # se for o ACK certo
+                                break
+                            else:
+                                time.sleep(2) # espera o timeout ser acionado
                         
                         except socket.timeout:
-                            print("Timeout, retransmitindo...")
                             continue  # Continua no loop para retransmitir
 
-                        chunk = file.read(1018)  # Lê o próximo fragmento
-                        seq_num = 1 - seq_num  # Alterna o número de sequência
+                    chunk = file.read(1018)  # Lê o próximo fragmento
+                    seq_num = 1 - seq_num  # Alterna o número de sequência
 
 
 def receiveMessages(client, server_address, close_event):
@@ -140,7 +140,7 @@ def receiveMessages(client, server_address, close_event):
         try:
             data = client.recv(1024)
             
-            # Ignora mensagens de controle (entrar e sair da sala)
+            # Printa mensagens de (entrar e sair da sala) dos outros clientes
             if data.endswith(b'entrou na sala'):
                 print(data.decode('utf-8') + '\n')
             elif data.endswith(b'saiu da sala'):
@@ -149,15 +149,15 @@ def receiveMessages(client, server_address, close_event):
                 pass
             else:   
 
-                eof = data[0] == 1
-                checksum_received = int.from_bytes(data[1:5], byteorder='big')
-                seq_num_received = data[5:6]
-                fragment = data[6:]
+                eof = data[0] == 1 # flag que indica ultimo fragmento 
+                checksum_received = int.from_bytes(data[1:5], byteorder='big') 
+                seq_num_received = data[5:6] # numero de sequência
+                fragment = data[6:] # dados do fragmento
 
                 checksum_calculated = get_checksum(fragment)
 
-                # # Envia ACK para cada pacote recebido
-                # send_ack(client, server_address, seq_num_received)
+                # Envia ACK para cada pacote recebido do broadcast do serve - Não testado devido ao erro de parelelismo nos ACK
+                send_ack(client, server_address, seq_num_received)
 
                 # Verifica checksum e se o pacote é um novo fragmento
                 if checksum_received == checksum_calculated and seq_num_received != last_seq_num:
